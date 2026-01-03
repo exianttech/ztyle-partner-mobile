@@ -32,7 +32,7 @@ const BeauticianModal = ({ visible, onClose, onConfirm, title, message, confirmT
                             <Text style={styles.modalButtonText}>{cancelText}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
-                            style={[styles.modalButton, styles.modalConfirmBeautician]}
+                            style={[styles.modalButton, styles.modalConfirm]}
                             onPress={onConfirm}
                         >
                             <Text style={styles.modalButtonText}>{confirmText}</Text>

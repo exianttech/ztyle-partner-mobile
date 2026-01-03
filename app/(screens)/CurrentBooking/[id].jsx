@@ -1,9 +1,12 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { showMessage } from 'react-native-flash-message';
+
 
 // data
-import { beauticianBookingsData } from '@/data/beauticianBookingsData';
 import { monthdata } from '@/data/monthData';
 
 // styles
@@ -16,15 +19,106 @@ import { bookingStatusConfig } from '@/config/bookingStatusConfig';
 import getStandardTime from '@/utils/getStandardTime';
 
 // components
+import PageTitle from '@/components/PageTitle';
+import Spinner from '@/components/Spinner';
+import BasicModal from '@/components/Modals/BasicModal';
+import WarningModal from '@/components/Modals/WarningModal';
 import FloatingBackButton from '@/components/FloatingBackButton';
 import Footer from '@/components/Footer';
-import PageTitle from '@/components/PageTitle';
+
+// actions
+import { resetBooking } from '@/store/booking/bookingSlice';
+import {
+    getBookingById, changeBookingStatusByBeauticianById
+ } from '@/store/booking/bookingActions';
+import { addNotification } from '@/store/notification/notificationActions';
 
 const CurrentBooking = () => {
     const router = useRouter();
     const { id } = useLocalSearchParams();
+    const dispatch = useDispatch();
 
-    const currentBooking = beauticianBookingsData.find(booking => booking._id === id);
+    // load booking on pressing screen
+    useFocusEffect(
+        useCallback(() => {
+            dispatch(getBookingById({ id }))
+        }, [dispatch, id])
+    );
+
+    // redux states
+    const { currentBooking, error } = useSelector(state => state.booking);
+    const bookingLoding = useSelector(state => state.booking.loading);
+
+    // states for modals
+    const [cancelBookingModal, setcancelBookingModal] = useState(false);
+    const [confirmBookingModal, setconfirmBookingModal] = useState(false);
+
+
+    useEffect(() => {
+        if (error) {
+            showMessage({
+                message: error || 'An error occured',
+                type: 'danger'
+            })
+        }
+    }, [error]);
+    
+    // clear states on return
+    useFocusEffect(
+        useCallback(() => {
+            return () => {
+                dispatch(resetBooking());
+            };
+        }, [dispatch])
+    );
+
+     if (bookingLoding) {
+        return (
+            <View
+                style={[styles.container, { flex: 1 }]}
+                contentContainerStyle={styles.center}
+            >
+                <Spinner />
+            </View>
+        )
+    }
+    
+    // ⛔ safety guard
+    if (!currentBooking) {
+        return (
+            <View>
+                <Text>Error</Text>
+            </View>
+        );
+    }
+
+    const handleConfirmBooking = () => {
+        setconfirmBookingModal(false)
+        const notification = {
+            senderName: currentBooking.beauticianName,
+            senderId: currentBooking.beauticianId,
+            receiverId: currentBooking.userId,
+            message: "Service Booking Confirmed",
+            notificationType:"info"
+        }
+        dispatch(addNotification({ notification }));
+        dispatch(changeBookingStatusByBeauticianById({ id: currentBooking._id, bookingData: { action: "confirmed" } }));
+    
+    }
+
+    const handleCancelBooking = () => { 
+        setcancelBookingModal(false)
+        const notification = {
+            senderName: currentBooking.beauticianName,
+            senderId: currentBooking.beauticianId,
+            receiverId: currentBooking.userId,
+            message: "Service Booking Confirmed",
+            notificationType:"danger"
+        }
+        dispatch(addNotification({ notification }));
+        dispatch(changeBookingStatusByBeauticianById({ id: currentBooking._id, bookingData: { action: "canceledByBeautician" } }));
+    }
+
     // destructure
     const { date,
         slot,
@@ -54,7 +148,7 @@ const CurrentBooking = () => {
                 return (
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={[styles.buttonLarge,styles.secondaryBeautician]}
+                            style={[styles.buttonLarge,styles.secondary]}
                         >
                             <Text style={styles.buttonText}>Mark As Complete</Text>
                         </TouchableOpacity>
@@ -64,12 +158,14 @@ const CurrentBooking = () => {
                 return (
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
-                            style={[styles.buttonLarge,styles.info]}
+                            style={[styles.buttonLarge, styles.info]}
+                            onPress={() => setconfirmBookingModal(true)}
                         >
                             <Text style={styles.buttonText}>Confirm </Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                             style={[styles.buttonLarge, styles.danger, { marginLeft: 8 }]}
+                            onPress={() => setcancelBookingModal(true)}
                         >
                             <Text style={styles.buttonText}>Cancel</Text>
                         </TouchableOpacity>
@@ -80,7 +176,7 @@ const CurrentBooking = () => {
                     <View style={styles.buttonContainer}>
                         <TouchableOpacity
                             style={[styles.buttonLarge, styles.success]}
-                            onPress={() => router.push('/')}
+                            onPress={() => router.push(`/(screens)/PaymentByBookingId/${id}`)}
                         >
                             <Text style={styles.buttonText}>View Payment Details</Text>
                         </TouchableOpacity>
@@ -90,7 +186,6 @@ const CurrentBooking = () => {
         }
     }
 
-
     return (
         <View style={{ flex: 1 }}>
             <ScrollView style={styles.container}>
@@ -99,7 +194,7 @@ const CurrentBooking = () => {
                     <View style={styles.column}>
                         <View style={styles.cardShadow}>
                             <View style={[styles.cardHeader, styles.center]}>
-                                <Text style={[styles.largeHeading, styles.textSecondaryBeautician,styles.textCenter]}>Status Of Selected Booking</Text>
+                                <Text style={[styles.largeHeading, styles.textSecondary,styles.textCenter]}>Status Of Selected Booking</Text>
                                 <Text style={[styles.fieldText, styles.textGray]}>{dobookDay} - {monthdata[dobookMonth]} - {dobookYear}</Text>
                             </View>
                             <View style={styles.cardBody}>
@@ -145,6 +240,24 @@ const CurrentBooking = () => {
                                     {
                                         renderBookingAction()
                                     }
+                                    <BasicModal
+                                            visible={confirmBookingModal}
+                                            onClose={() => setconfirmBookingModal(false)}
+                                            onConfirm={handleConfirmBooking}
+                                            title="Are You Sure You want to Confirm This Slot"
+                                            message="Click Confirm if you are ready for this slot .. . otherwise click close"
+                                            confirmText='Confirm'
+                                            cancelText='Close'
+                                    />
+                                    <WarningModal
+                                            visible={cancelBookingModal}
+                                            onClose={() => setcancelBookingModal(false)}
+                                            onConfirm={handleCancelBooking}
+                                            title="Are You Sure You want to Cancel Booking"
+                                            message="Click Cancel if you still want to calncel this booking .. . otherwise click close"
+                                            confirmText='Cancel'
+                                            cancelText='Close'
+                                    />
                                 
                                 </View>
                             </View>
@@ -153,9 +266,10 @@ const CurrentBooking = () => {
                 </View>
                 <Footer />
             </ScrollView>
-            <FloatingBackButton fallback='/(tabsBeautician)/Dashboard'/>
+            <FloatingBackButton fallback='/(tabsBeautician)/Dashboard' />
         </View>
     )
+
 }
 
 export default CurrentBooking

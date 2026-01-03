@@ -1,8 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native'
+import {  Text, View } from 'react-native'
+import React from 'react';
 
-import React from 'react'
-
-import styles from '@/styles/componentStyles'
+// styles
+import styles from '@/styles/styles';
 
 const Error = ({ children, ...props }) => {
   return (

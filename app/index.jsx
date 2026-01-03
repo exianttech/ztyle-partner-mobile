@@ -1,6 +1,8 @@
-import { useRouter } from 'expo-router';
 import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
 
 // styles
 import styles from '@/styles/styles';
@@ -14,6 +16,15 @@ import NavbarPublic from '@/components/NavbarPublic';
 
 export default function Index() {
   const router = useRouter();
+
+  // JWT 
+  const token = useSelector(state => state.auth.token);
+  
+  useEffect(() => {
+    if (token) {
+      router.replace('/(tabs)/Dashboard')
+    }
+  }, [router, token]);
 
   return (
     <SafeAreaView>
@@ -58,7 +69,7 @@ export default function Index() {
                       <View style={styles.buttonContainer}>
                         <TouchableOpacity
                           style={[styles.buttonLink, styles.secondary]}
-                          onPress={() => router.replace('/(auth)/Register')}
+                          onPress={() => router.replace('/(auth)/GetStarted')}
                         >
                           <Text style={styles.buttonText}>Get Started</Text>
                         </TouchableOpacity>

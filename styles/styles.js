@@ -165,11 +165,38 @@ const styles = StyleSheet.create({
         shadowRadius: 3,
     },
 
+     // divider
+    dividerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginVertical: 20,
+    },
+    line: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#ccc',
+        marginHorizontal: 10
+    },
+    whiteLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: '#fff',
+        marginHorizontal: 10
+    },
+
     // alerts
     alertContainer: {
         justifyContent: 'center',
         alignItems: "center",
         marginVertical: 8
+    },
+    centerAlertContainer: {
+        width: '100%',
+        justifyContent: 'center',
+        alignItems: "center",
+        padding: 12
+
     },
     alert: {
         width: "100%",
@@ -292,8 +319,8 @@ const styles = StyleSheet.create({
         marginBottom: 24
     },
     authBgImage: {
-        width: 250,
-        height: 100,
+        width: 200,
+        height: 80,
         marginBottom: 16
     },
     loginBgImage: {
@@ -807,6 +834,28 @@ const styles = StyleSheet.create({
         marginBottom: 16
     },
 
+    dataListContainer: {
+        position: "absolute",
+        top: 50, // adjust to match input height + spacing
+        left: 0,
+        right: 0,
+        backgroundColor: "#fff",
+        borderWidth: 1,
+        borderColor: "#ccc",
+        borderRadius: 8,
+        maxHeight: 150,
+        zIndex: 10,
+        elevation: 5, // for Android shadow
+        shadowColor: "#000", // for iOS shadow
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+        shadowOffset: { width: 0, height: 2 },
+    },
+    dataListItem: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: "#eee",
+    },
     // tabs
     tabHeader: {
         flexDirection: 'row',
@@ -889,6 +938,12 @@ const styles = StyleSheet.create({
     modalConfirm: {
         backgroundColor: '#17a2b8'
     },
+    modalConfirmDanger: {
+        backgroundColor: '#FF6746'
+    },
+    modalConfirmWarning: {
+        backgroundColor: '#FFC368'
+    },
 
      /// footer
 
@@ -922,6 +977,17 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color:'gray'
     },
+
+    // error screens
+    errorContainer: {
+        marginVertical: 8
+    },
+    errorText: {
+        color: '#FF6746',
+        textAlign: 'center',
+        fontSize:16
+    },
+    
 
     /// bootstrap 
     row: {

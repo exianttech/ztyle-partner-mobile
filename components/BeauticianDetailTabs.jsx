@@ -14,6 +14,8 @@ import extractActiveDays from '@/utils/extractActiveDays';
 import BeauticianReviews from './Reviews/BeauticianReviews/BeauticianReviews';
 import Slots from './Slots/Slots';
 
+
+
 const BeauticianDetailTabs = ({beautician}) => {
 
     // destructure

@@ -1,11 +1,17 @@
+import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
 import { FontAwesome } from '@expo/vector-icons';
 import { Link } from 'expo-router';
-import React, { useState } from 'react';
-import { Image, Pressable, ScrollView, Text, TouchableOpacity, View } from 'react-native';
+import * as ImageManipulator from 'expo-image-manipulator';
+import * as ImagePicker from 'expo-image-picker';
+import { useDispatch } from 'react-redux';
 
 
 // data
 import { monthdata } from '@/data/monthData';
+
+// images
+import defaultProfilePic from '@/assets/images/avatar/defaultProfilePic.png';
 
 // styles
 import styles from '@/styles/styles';
@@ -14,13 +20,26 @@ import styles from '@/styles/styles';
 import extractActiveDays from '@/utils/extractActiveDays';
 
 // components
-import BasicModal from './Modals/BasicModal';
 import BeauticianReviews from './Reviews/BeauticianReviews/BeauticianReviews';
 import Slots from './Slots/Slots';
 
+// modals
+import DangerModal from './Modals/DangerModal';
+
+// actions
+import {
+    updateProfilePic,
+    deleteProfilePic,
+    deleteProfile
+} from '@/store/profile/profileActions';
+
+
 const BeauticianProfileTabs = ({ profile }) => {
+    const dispatch = useDispatch();
+
+
     // destructure
-    const { fullName, shopId, mobile,
+    const { _id,fullName, shopId, mobile,
         email, gender, dob, position,
         specialty, yearsOfExperience, employmentStatus,
         holidaySchedule, languagesSpoken,
@@ -40,13 +59,109 @@ const BeauticianProfileTabs = ({ profile }) => {
 
     // modal
     const [modalVisible, setmodalVisible] = useState(false);
+    const [modalProfilePicVisible, setmodalProfilePicVisible] = useState(false);
+
+    // error object for validation
+    let errorsObj = { currentProfilePic: '' };
+    const [errors, seterrors] = useState(errorsObj);
+        
+    // input fields
+    const [currentProfilePic, setcurrentProfilePic] = useState('');
     
+    // field accessories
+    const [isProfilePicEdit, setisProfilePicEdit] = useState(false);
+
+    // profile pic display handling
+    const [imageFailed, setImageFailed] = useState(false);
+    
+    
+    const hasSlots = Array.isArray(availableSlots) && availableSlots.length > 0;
+
     const handleDelete = () => {
         setmodalVisible(false);
-        console.log("profile deleted")
-        // replace backend
+        dispatch(deleteProfile({ id: _id }))
+        
     }
 
+    const handleProfilePicImage = async () => {
+
+        // Ask for permission (required on physical devices)
+        const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permissionResult.granted) {
+            alert('Permission to access media library is required!')
+            return
+        }
+        // Launch image picker
+        const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ['images', 'videos'],
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 1,
+        });
+    
+        if (!result.canceled) {
+            const originalUri = result.assets[0].uri;
+            // Resize to 1024x1024 and compress to 50%
+              
+            const manipulatedImage = await ImageManipulator.manipulateAsync(
+                originalUri,
+                [{
+                    resize: {
+                        width: 1024,
+                        height: 1024
+                    }
+                }],
+                {
+                    compress: 0.5,
+                    format: ImageManipulator.SaveFormat.JPEG
+                }
+              )
+              const imageObj = {
+                  uri: manipulatedImage.uri,
+                  name: 'profilePic.jpg',
+                  type: 'image/jpeg'
+             }
+            setcurrentProfilePic(imageObj);
+        }
+    
+    }
+    const handleUpdateProfilePic = () => {
+              
+        let error = false;
+        const errorObj = { ...errorsObj };
+            
+        if (currentProfilePic === '' || currentProfilePic === null || currentProfilePic === undefined) {
+            errorObj.currentProfilePic = 'Please Select a File';
+            error = true
+        }
+                
+        seterrors(errorObj);
+            
+        if (error) {
+            return
+        }
+            
+              
+        const profileData = new FormData();
+        profileData.append('profilePic', currentProfilePic);
+        setisProfilePicEdit(false)
+        console.log(profileData)
+        dispatch(updateProfilePic({ profileData, _id }))
+        
+    }
+    
+    const handleDeleteProfilePic = () => {
+        setmodalVisible(false)
+        dispatch(deleteProfilePic({ _id }))
+    }
+
+    const resolvedProfilePic = imageFailed
+        ? defaultProfilePic
+        : currentProfilePic
+            ? currentProfilePic
+            : profilePic
+                ? { uri: profilePic }
+                : defaultProfilePic;
 
     const renderedContent = () => {
         switch (activeTab) {
@@ -142,8 +257,8 @@ const BeauticianProfileTabs = ({ profile }) => {
                     <>
                         <View style={styles.cardBody}>
                             {
-                                // check existence of advance profile status
-                                !advanceProfileStatus ? (
+                                // check existence of slots
+                                hasSlots ? (
                                     <>
                                         <View style={{ marginBottom: 8 }}>
                                             <Text style={[styles.cardBodySubHeading, styles.textSecondary]}>Time Slots For Booking : Working Day</Text>
@@ -168,7 +283,7 @@ const BeauticianProfileTabs = ({ profile }) => {
                                         </View>
                                         <View style={styles.cardShadow}>
                                             <View style={styles.cardBody}>
-                                                <Link href='/(forms)/AddAdvanceProfile'>
+                                                <Link href='/(forms)/AddAvailableSlots'>
                                                     <Text style={styles.textGray}>Click Here to Fill up Booking Slot Info</Text>
                                                 </Link>
                                             </View>
@@ -192,19 +307,20 @@ const BeauticianProfileTabs = ({ profile }) => {
                                 <View style={styles.alertContainer}>
                                     <View style={[styles.alert, styles.secondary]}>
                                         <Text style={[styles.alertText, styles.alertTextBold]}>Edit Your Basic Profile</Text>
-                                        <Link href='/(forms)/AddBasicProfile'>
+                                        <Link href='/(forms)/EditBasicProfile'>
                                             <Text style={styles.alertText}>click here to edit your basic profile</Text>
                                         </Link>
                                     </View>
                                 </View>
                             </View>
                             {
-                                advanceProfileStatus ? (
+                                // check existence of slots
+                                hasSlots ? (
                                     <View style={styles.cardBody}>
                                         <View style={styles.alertContainer}>
                                             <View style={[styles.alert, styles.info]}>
                                                 <Text style={[styles.alertText, styles.alertTextBold]}>Edit Your Booking Slot</Text>
-                                                <Link href='/()'>
+                                                <Link href='/(forms)/EditAvailableSlots'>
                                                     <Text style={styles.alertText}>click here to edit your slot info</Text>
                                                 </Link>
                                             </View>
@@ -225,7 +341,7 @@ const BeauticianProfileTabs = ({ profile }) => {
                                             <Text style={styles.alertText}>click here to delete your profile</Text>
                                         </TouchableOpacity>
                                         {/* Modal */}
-                                        <BasicModal
+                                        <DangerModal
                                             visible={modalVisible}
                                             onClose={() => setmodalVisible(false)}
                                             onConfirm={handleDelete}
@@ -246,9 +362,15 @@ const BeauticianProfileTabs = ({ profile }) => {
                     <View style={styles.cardShadow}>
                         <View style={styles.cardBody}>
                             <Image
-                                source={profilePic}
+                                source={resolvedProfilePic}
                                 style={styles.profilePicPhoto}
                                 resizeMode='cover'
+                                onError={() => {
+                                    // fallback to default picture
+                                    console.log("Image failed — switching to default");
+                                    setImageFailed(true);
+                                    setcurrentProfilePic("");   // reset local state
+                                }}
                             />
                         </View>
                         <View style={styles.cardBody}>
@@ -257,22 +379,30 @@ const BeauticianProfileTabs = ({ profile }) => {
                         </View>
                         
                         {
-                            1 ? // replace with is profilePicEdit
+                            isProfilePicEdit ? 
                                 <View style={[styles.cardBody, { marginTop: 16 }]}>
                                     <View style={styles.formGroup}>
                                         <Text style={[styles.formGroupLabel, styles.textShadow]}> Select Profile Pic<Text style={styles.textDanger}>*</Text></Text>
                                         <Pressable
                                             style={styles.formGroupTextInput}
+                                            onPress={handleProfilePicImage}
                                         >
                                             <Text style={styles.textGray}>Choose Image</Text>
                                         </Pressable>
+                                        {errors.currentProfilePic && <Text style={[styles.textDanger, { fontSize: 12 }]}>{errors.currentProfilePic}</Text>}
                                     </View>
                                     <View style={styles.buttonContainer}>
-                                        <TouchableOpacity style={[styles.buttonLarge, styles.secondary]}>
+                                        <TouchableOpacity
+                                            style={[styles.buttonLarge, styles.secondary, { paddingHorizontal: 24, minWidth: 120 }]}
+                                            onPress={handleUpdateProfilePic}
+                                        >
                                             <FontAwesome name='upload' size={16} color='#fff' />
                                             <Text style={[styles.buttonText, { marginLeft: 8 }]}>Upload</Text>
                                         </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.buttonLarge, styles.primary, { marginLeft: 8 }]}>
+                                        <TouchableOpacity
+                                            style={[styles.buttonLarge, styles.primary, { marginLeft: 8, paddingHorizontal: 24, minWidth: 120 }]}
+                                            onPress={() => setisProfilePicEdit(false)}
+                                        >
                                             <FontAwesome name='close' size={16} color='#fff' />
                                             <Text style={[styles.buttonText, { marginLeft: 8 }]}>Cancel</Text>
                                         </TouchableOpacity>
@@ -284,26 +414,39 @@ const BeauticianProfileTabs = ({ profile }) => {
                             
                         }
                         {
-                            1 ? // replace with !profilePicEdit
+                            !isProfilePicEdit ? 
                                 <View style={styles.cardBody}>
                                     <View style={styles.buttonContainer}>
                                         <TouchableOpacity
-                                            style={[styles.buttonLarge,styles.secondary]}
+                                            style={[styles.buttonLarge, styles.secondary, { paddingHorizontal: 24, minWidth: 120 }]}
+                                            onPress={() => setisProfilePicEdit(true)}
                                         >
                                             <FontAwesome name='user' size={16} color="#fff" />
-                                            <Text style={[styles.buttonText, { marginLeft: 8 }]}>{profilePic ? "Edit Photo" : "Add Photo"}</Text>
+                                            <Text style={[styles.buttonText, { marginLeft: 8 }]}>{profilePic ? "Edit" : "Add"}</Text>
                                         </TouchableOpacity>
                                         {
                                             profilePic && (
                                                 <TouchableOpacity
-                                                    style={[styles.buttonLarge, styles.primary,{ marginLeft: 8 }]}
+                                                    style={[styles.buttonLarge, styles.primary, { marginLeft: 8, paddingHorizontal: 24, minWidth: 120 }]}
+                                                    onPress={() => setmodalProfilePicVisible(true)}
                                                 >
                                                     
                                                     <FontAwesome name='trash' size={16} color="#fff" />
                                                     <Text style={[styles.buttonText, { marginLeft: 8 }]}>Delete</Text>
                                                 </TouchableOpacity>
+                                                
                                             )
                                         }
+                                         {/* Modal */}
+                                        <DangerModal
+                                            visible={modalProfilePicVisible}
+                                            onClose={() => setmodalProfilePicVisible(false)}
+                                            onConfirm={handleDeleteProfilePic}
+                                            title="Are you sure you want to delete?"
+                                            message="Click Delete if you still want to delete your profile pic. Otherwise click Close."
+                                            confirmText='Delete'
+                                            cancelText='Close'
+                                        />
                                     </View>
                                 </View>
                                 : ""

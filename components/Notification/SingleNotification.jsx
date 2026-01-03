@@ -36,31 +36,30 @@ const SingleNotification = ({ not }) => {
   const time = getStandardTime(result[0]);
 
   useEffect(() => {
-    if (not.class === "secondary") {
+    if (not.notificationType === "secondary") {
       setinitBgStyle(styles.mediaSecondary)
       setinitTextStyle(styles.textSecondary)
     }
-    else if (not.class === "info") {
+    else if (not.notificationType === "info") {
       setinitBgStyle(styles.mediaInfo)
       setinitTextStyle(styles.textInfo)
     }
-    else if (not.class === "success") {
+    else if (not.notificationType === "success") {
       setinitBgStyle(styles.mediaSuccess)
       setinitTextStyle(styles.textSuccess)
     }
-    else if (not.class === "warning") {
+    else if (not.notificationType === "warning") {
       setinitBgStyle(styles.mediaWarning)
       setinitTextStyle(styles.textWarning)
     }
-    else if (not.class === "danger") {
+    else if (not.notificationType === "danger") {
       setinitBgStyle(styles.mediaDanger)
       setinitTextStyle(styles.textDanger)
     }
 
 
-  }, [not.class]);
+  }, [not.notificationType]);
 
-  
   return (
     <View style={styles.singleNotContainer}>
       <View style={[styles.notInitials, initBgStyle]}>

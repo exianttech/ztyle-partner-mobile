@@ -1,9 +1,17 @@
+import { ActivityIndicator } from 'react-native';
 import { useFonts } from 'expo-font';
 import { Stack } from "expo-router";
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import FlashMessage from 'react-native-flash-message';
+
+//redux
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor } from '@/store';
+
 
 
 export default function RootLayout() {
@@ -29,9 +37,15 @@ export default function RootLayout() {
 
   
   return (
-    <SafeAreaProvider>
-      <StatusBar style="dark" />
-      <Stack screenOptions={{ headerShown: false }} />
-    </SafeAreaProvider>
+    <Provider store={store}>
+      <PersistGate loading={<ActivityIndicator size="large" color="#20c997" />} persistor={persistor}>
+        <SafeAreaProvider>
+          <StatusBar style="dark" />
+          <Stack screenOptions={{ headerShown: false }} />
+          <FlashMessage position='top' />
+        </SafeAreaProvider>
+      </PersistGate>
+    </Provider>
+    
   )
 }

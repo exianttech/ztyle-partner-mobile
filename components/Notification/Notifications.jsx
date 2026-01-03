@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
 import { ScrollView, Text } from 'react-native';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 
-// data
-import { notificationsData } from '@/data/notificationsData';
 
 // styles
 import styles from '@/styles/styles';
@@ -10,10 +9,25 @@ import styles from '@/styles/styles';
 // components
 import SingleNotification from './SingleNotification';
 
-const Notifications = () => {
-  const [notifications, setnotifications] = useState(notificationsData)
-  
+// actions
+import { readNotifications } from '@/store/notification/notificationActions';
 
+
+const Notifications = () => {
+  const dispatch = useDispatch();
+
+  // profile redux
+  const { profile } = useSelector(state => state.profile);
+
+  useEffect(() => {
+    if (profile) {
+      dispatch(readNotifications({ id: profile._id }))
+    }
+  }, [dispatch, profile]);
+
+  // notification redux 
+  const { notifications } = useSelector(state => state.notification);
+  
   return (
       <ScrollView
         style={styles.notContainer}
@@ -22,9 +36,8 @@ const Notifications = () => {
         bounces={true}
       >
         {
-      
-          1 ? // replace with notification redux state
-            notifications.map((not, idx) => (
+        notifications ? // replace with notification redux state
+          notifications?.notifications?.map((not, idx) => (
               <SingleNotification key={idx} not={not} />
             ))
             : <Text style={[styles.textCenter, styles.textBold]}>No New Notifications</Text>

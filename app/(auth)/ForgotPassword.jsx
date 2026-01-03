@@ -1,6 +1,8 @@
-import { Link } from 'expo-router';
-import React, { useState } from 'react';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import React, { useState,useEffect } from 'react';
+import { Link, useRouter } from 'expo-router';
+import { useDispatch, useSelector } from 'react-redux';
+import { showMessage } from 'react-native-flash-message';
 
 // images
 import ztyleSvg from '@/assets/images/ztyle_svg.png';
@@ -9,11 +11,70 @@ import ztyleSvg from '@/assets/images/ztyle_svg.png';
 import styles from '@/styles/styles';
 
 // components
+import Error from '@/components/Error';
+import Spinner from '@/components/SpinnerWhite';
+import EmailValidator from '@/components/EmailValidator';
+
+// actions
+import { requestResetPassword } from '@/store/auth/authActions';
+
 
 const ForgotPassword = () => {
+  const router = useRouter();
+  const dispatch = useDispatch();
+
+  // redux states
+  const { loading, message, error } = useSelector(state => state.auth);
+
+  // console.log(loading, message, error);
+
 
   // field accessories
   const [focusField, setfocusField] = useState(null);
+  
+  // field states
+  const [email, setemail] = useState('');
+
+  // error field for validation
+  let errorsObj = { email: '' };
+  const [errors, setErrors] = useState(errorsObj);
+
+  const handleSubmit = () => {
+    // front end validation
+    let error = false;
+    const errorObj = { ...errorsObj };
+    if (email === '') {
+      errorObj.email = "email is required";
+      error =true
+    }
+    if (email && !EmailValidator(email)) {
+      errorObj.email = "Invalid email format";
+      error =true
+    }
+    setErrors(errorObj)
+    if (error) {
+      return;
+    }
+    const data = { email };
+    dispatch(requestResetPassword(data));
+
+  }
+
+  useEffect(() => {
+    if (error) {
+      showMessage({
+        message: error,
+        type: 'danger'
+      })
+    }
+    if (message === "success") {
+      showMessage({
+        message: "Request to reset password is success",
+        type: 'success'
+      })
+      router.push('/(auth)/PasswordMailsendStatus')
+    }
+  }, [error, message, router]);
   
 
   return (
@@ -31,9 +92,14 @@ const ForgotPassword = () => {
               source={ztyleSvg}
               style={styles.authBgImage}
             />
-            <Text style={styles.subHeading}>Sign up your account</Text>
+            <View style={styles.dividerContainer}>
+              <View style={styles.line} />
+              <Text style={[styles.subHeading, styles.textCenter, { color: '#777' }, styles.textShadow]}>Reset your password</Text>
+              <View style={styles.line} />
+            </View>
+            
           </View>
-          {/* <Error>Error Text</Error> */}
+          <Error>{error}</Error>
           
           <View style={styles.authFormContainer}>
             <View style={styles.formGroup}>
@@ -47,13 +113,24 @@ const ForgotPassword = () => {
                 autoCorrect={false}
                 onFocus={() => setfocusField('email')}
                 onBlur={() => setfocusField(null)}
-                
+                value={email}
+                onChangeText={setemail}
               />
-              {/* <Text style={[styles.textDanger,{fontSize:12}]}>error</Text> */}
+
+              {errors.email && <Text style={[styles.textDanger, { fontSize: 12 }]}>{errors.email}</Text>}
             </View>
             <View style={{ marginVertical: 40 }}>
-              <TouchableOpacity style={[styles.buttonLarge, styles.secondary]}>
-                <Text style={styles.buttonText}> Submit </Text>
+              <TouchableOpacity
+                style={[styles.buttonLarge, styles.secondary]}
+                onPress={handleSubmit}
+              >
+                {
+                  loading ?
+                    <Spinner />
+                    :
+                    <Text style={styles.buttonText}> Submit </Text>
+                }
+                
               </TouchableOpacity>
             </View>
             <Text style={styles.textGray}>
